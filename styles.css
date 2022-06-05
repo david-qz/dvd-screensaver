@@ -2,6 +2,7 @@ html {
     background-color: #111;
     width: 100vw;
     height: 100vh;
+    overflow: hidden;
     display: grid;
     justify-items: center;
     align-items: center;
@@ -31,4 +32,5 @@ body {
     position: absolute;
     margin: 0;
     padding: 0;
+    width: 15%;
 }

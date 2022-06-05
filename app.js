@@ -1,10 +1,8 @@
 class BouncingLogo {
     static filename = 'assets/dvd.png';
     static elementClass = 'logo';
-    static defaultWidth = 15;
-    static screenPorch = 0.5;
     static velocities = [{ x: 1, y: 1 }, { x: -1, y: 1 }, { x: -1, y: -1 }, { x: 1, y: -1 }];
-    static velFactor = 12;
+    static velFactor = 0.15; // As a percentage of screen width per second.
 
     static get randomVelocity() {
         const vel = Object.assign({}, BouncingLogo.velocities[Math.floor(Math.random() * this.velocities.length)]);
@@ -13,73 +11,56 @@ class BouncingLogo {
         return vel;
     }
 
-    static get randomPosition() {
-        return { x: 30 + Math.random() * 30, y: 30 + Math.random() * 30 };
-    }
-
-    constructor(pos, vel, scale = 1) {
+    constructor(pos, vel) {
         this.img = document.createElement('img');
         this.img.src = BouncingLogo.filename;
         this.img.classList.add(BouncingLogo.elementClass);
-        this.width = BouncingLogo.defaultWidth * scale;
-        this.img.style.width = this.width + '%';
-
-        this.pos = pos || BouncingLogo.randomPosition;
-        this.vel = vel || BouncingLogo.randomVelocity;
-        this.hueRotation = Math.floor(Math.random() * 6) * 60;
-
-        // Defer initialization of these values until the element is the in the DOM and
-        // has gone through layout.
-        this.initialized = false;
-        this.bounds = null;
-        this.screenAspectRatio = null;
-        this.aspectRatio = null;
-        this.height = null;
-
         document.body.appendChild(this.img);
         this.parent = this.img.parentElement;
+
+        this.initialized = false;
+        this.pos = pos || this.randomPosition;
+        this.vel = vel || BouncingLogo.randomVelocity;
+        this.hueRotation = Math.floor(Math.random() * 6) * 60;
     }
 
-    #initialize() {
-        this.screenAspectRatio = this.parent.clientWidth / this.parent.clientHeight;
-        this.aspectRatio = this.img.clientWidth / this.img.clientHeight;
-        this.height = this.width / this.aspectRatio * this.screenAspectRatio;
-
-        // Sometimes we're too early and the browser hasn't ran lay out on the img
-        // element yet.
-        if (this.height <= 0) return;
-
-        this.bounds = {
-            xMin: 0 + BouncingLogo.screenPorch,
-            yMin: 0 + BouncingLogo.screenPorch,
-            xMax: 100 - this.width - BouncingLogo.screenPorch,
-            yMax: 100 - this.height - BouncingLogo.screenPorch,
+    get randomPosition() {
+        return {
+            x: Math.random() * this.parent.clientWidth,
+            y: Math.random() * this.parent.clientHeight,
         };
-        this.initialized = true;
     }
 
     tick(deltaTime) {
-        if (!this.initialized) this.#initialize();
-        if (!this.initialized) return;
-
         this.#handleBounds();
 
-        this.pos.x += this.vel.x * deltaTime * this.screenAspectRatio;
-        this.pos.y += this.vel.y * deltaTime;
+        this.pos.x += this.vel.x * this.parent.clientWidth * deltaTime;
+        this.pos.y += this.vel.y * this.parent.clientWidth * deltaTime;
 
         this.#syncToDOM();
     }
 
     #handleBounds() {
-        const { xMin, xMax, yMin, yMax } = this.bounds;
+        const containingRect = this.parent.getBoundingClientRect();
+        const imgRect = this.img.getBoundingClientRect();
 
-        if (this.pos.x < xMin || this.pos.x > xMax) {
-            this.pos.x = Math.min(xMax, Math.max(xMin, this.pos.x));
+        if (imgRect.left < containingRect.left) {
+            this.pos.x = 0;
             this.vel.x *= -1;
             this.#onBounce();
         }
-        if (this.pos.y < yMin || this.pos.y > yMax) {
-            this.pos.y = Math.min(yMax, Math.max(yMin, this.pos.y));
+        if (imgRect.top < containingRect.top) {
+            this.pos.y = 0;
+            this.vel.y *= -1;
+            this.#onBounce();
+        }
+        if (imgRect.right > containingRect.right) {
+            this.pos.x = containingRect.width - imgRect.width;
+            this.vel.x *= -1;
+            this.#onBounce();
+        }
+        if (imgRect.bottom > containingRect.bottom) {
+            this.pos.y = containingRect.height - imgRect.height;
             this.vel.y *= -1;
             this.#onBounce();
         }
@@ -90,8 +71,8 @@ class BouncingLogo {
     }
 
     #syncToDOM() {
-        this.img.style.left = this.pos.x + '%';
-        this.img.style.top = this.pos.y + '%';
+        this.img.style.left = this.pos.x + 'px';
+        this.img.style.top = this.pos.y + 'px';
         this.img.style.filter = `hue-rotate(${this.hueRotation}deg) brightness(200%) saturate(200%)`;
     }
 }
