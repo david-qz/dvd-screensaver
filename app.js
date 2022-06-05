@@ -18,7 +18,6 @@ class BouncingLogo {
         document.body.appendChild(this.img);
         this.parent = this.img.parentElement;
 
-        this.initialized = false;
         this.pos = pos || this.randomPosition;
         this.vel = vel || BouncingLogo.randomVelocity;
         this.hueRotation = Math.floor(Math.random() * 6) * 60;
